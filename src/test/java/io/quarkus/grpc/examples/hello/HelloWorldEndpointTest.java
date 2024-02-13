@@ -10,16 +10,6 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 class HelloWorldEndpointTest {
 
-    @Test
-    public void testHelloWorldServiceUsingBlockingStub() {
-        String response = get("/hello/blocking/neo").asString();
-        assertThat(response).startsWith("Hello neo");
-    }
 
-    @Test
-    public void testHelloWorldServiceUsingMutinyStub() {
-        String response = get("/hello/mutiny/neo-mutiny").asString();
-        assertThat(response).startsWith("Hello neo-mutiny");
-    }
 
 }

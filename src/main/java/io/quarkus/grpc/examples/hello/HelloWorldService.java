@@ -6,14 +6,13 @@ import java.util.logging.Logger;
 
 
 import io.grpc.ServerServiceDefinition;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
-
+import io.quarkus.grpc.example.HelloReplyALot;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.quarkus.grpc.example.HelloReply;
 import io.quarkus.grpc.example.HelloRequest;
-
 import io.quarkus.grpc.example.GreeterGrpc.GreeterImplBase;
 
 @GrpcService
@@ -32,17 +31,19 @@ public class HelloWorldService extends GreeterImplBase
     }
 
     @Override
-    public void sayHelloALot(HelloRequest request, StreamObserver<HelloReply> responseObserver)
+    public void sayHelloALot(HelloRequest req, StreamObserver<HelloReplyALot> responseObserver)
     {
+        log.info("sayHelloALot: " + req.getName());
+        AtomicInteger counter = new AtomicInteger();
+        ServerCallStreamObserver serverCallStreamObserver = (ServerCallStreamObserver) responseObserver;
+        serverCallStreamObserver.setOnCancelHandler(() -> log.info("Client cancelled"));
 
-        log.info("sayHelloALot: " + request.getName());
-        AtomicInteger counter = new AtomicInteger(0);
         Multi.createFrom().ticks().every(Duration.ofSeconds(1))
-                .onItem().transform(n -> "Hello " + request.getName() + " " + counter.incrementAndGet())
-                .onItem().transform(n -> HelloReply.newBuilder().setMessage(n).build())
-                .subscribe().with(responseObserver::onNext, responseObserver::onError, responseObserver::onCompleted);
-    }
+                .onItem().transform(n -> "Hello " + req.getName() + " " + counter.incrementAndGet())
+                .subscribe().with(reply -> responseObserver.onNext(HelloReplyALot.newBuilder().setMessage(reply).build()),
+                        responseObserver::onError, responseObserver::onCompleted    );
 
+    }
     @Override
     public ServerServiceDefinition bindService()
     {
